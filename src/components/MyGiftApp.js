@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, memo } from "react";
+import React, { useState, useRef, useEffect, memo } from "react";
 import { Search, Filter } from "lucide-react";
 import wallet from "../images/wallet.jpg";
 import watch from "../images/watch.jpg";
