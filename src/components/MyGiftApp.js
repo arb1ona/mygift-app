@@ -1,18 +1,23 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from "react";
-import { Search } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import wallet from "../images/wallet.jpg";
 import watch from "../images/watch.jpg";
 import candles from "../images/candles.jpg";
+import walletM from "../images/walletM.jpg";
+import earbuds from "../images/earbuds.jpg";
+import scarf from "../images/scarf.jpg";
+import Gift from "../images/gift.png";
 
-// Sample product data with gender and category
+// Sample product data with gender, category, and links
 const sampleProducts = [
   {
     id: 1,
     name: "Hill Berry Leather Wallet",
     price: 45.99,
     category: "wallet",
-    gender: "unisex",
+    gender: "female",
     image: wallet,
+    link: "https://hillberry.com/wallet",
   },
   {
     id: 2,
@@ -21,6 +26,7 @@ const sampleProducts = [
     category: "electronics",
     gender: "unisex",
     image: watch,
+    link: "https://amazon.com/smart-watch",
   },
   {
     id: 3,
@@ -29,6 +35,7 @@ const sampleProducts = [
     category: "candles",
     gender: "unisex",
     image: candles,
+    link: "https://unionoflondon.com/candles",
   },
   {
     id: 4,
@@ -36,7 +43,8 @@ const sampleProducts = [
     price: 89.99,
     category: "accessories",
     gender: "female",
-    image: "/api/placeholder/200/200",
+    image: scarf,
+    link: "https://fashion.com/silk-scarf",
   },
   {
     id: 5,
@@ -44,9 +52,33 @@ const sampleProducts = [
     price: 179.99,
     category: "electronics",
     gender: "male",
-    image: "/api/placeholder/200/200",
+    image: earbuds,
+    link: "https://amazon.com/earbuds",
+  },
+  {
+    id: 6,
+    name: "Polo Ralph Lauren WALLET",
+    price: 79.99,
+    category: "wallet",
+    gender: "male",
+    image: walletM,
+    link: "https://ralphlauren.com/wallet",
   },
 ];
+
+const categories = ["wallet", "electronics", "candles", "accessories"];
+const priceRanges = [
+  { label: "All Prices", value: "all" },
+  { label: "Under $50", value: "0-50" },
+  { label: "$50 - $100", value: "50-100" },
+  { label: "$100 - $150", value: "100-150" },
+  { label: "Over $150", value: "150+" },
+];
+
+const genderMap = {
+  male: ["for male", "for men"],
+  female: ["for female", "for women"],
+};
 
 // Parses the search query and extracts category, gender, and price range
 const parseSearchQuery = (query) => {
@@ -62,27 +94,69 @@ const parseSearchQuery = (query) => {
 
   // Extract gender
   let gender = "unisex";
-  if (lowerQuery.includes("for male") || lowerQuery.includes("for men"))
-    gender = "male";
-  if (lowerQuery.includes("for female") || lowerQuery.includes("for women"))
-    gender = "female";
+  for (const [key, values] of Object.entries(genderMap)) {
+    if (values.some((val) => lowerQuery.includes(val))) {
+      gender = key;
+      break;
+    }
+  }
 
-  // Extract category (based on predefined product categories)
-  const categories = ["wallet", "candles", "electronics", "accessories"];
-  const foundCategory =
-    categories.find((cat) => lowerQuery.includes(cat)) || null;
+  // Extract category - now checks for category mentions more flexibly
+  let category = null;
+  const categoryKeywords = {
+    wallet: ["wallet", "wallets", "purse"],
+    electronics: [
+      "electronics",
+      "gadget",
+      "tech",
+      "electronic",
+      "device",
+      "gadgets",
+      "watch",
+      "earbud",
+    ],
+    candles: ["candle", "candles", "scented"],
+    accessories: ["accessory", "accessories", "scarf", "scarves"],
+  };
 
-  return { category: foundCategory, gender, maxPrice };
+  for (const [cat, keywords] of Object.entries(categoryKeywords)) {
+    if (keywords.some((keyword) => lowerQuery.includes(keyword))) {
+      category = cat;
+      break;
+    }
+  }
+
+  return { category, gender, maxPrice };
 };
 
-// Filters products based on parsed query
-const filterProducts = (products, query) => {
-  const { category, gender, maxPrice } = parseSearchQuery(query);
+// Filters products based on all criteria
+const filterProducts = (products, query, category, priceRange) => {
+  const {
+    category: searchCategory,
+    gender,
+    maxPrice,
+  } = parseSearchQuery(query);
 
   return products.filter((product) => {
-    if (category && product.category !== category) return false;
+    // Natural language search filters
     if (gender !== "unisex" && product.gender !== gender) return false;
     if (maxPrice !== null && product.price > maxPrice) return false;
+    if (searchCategory && product.category !== searchCategory) return false;
+
+    // Dropdown category filter
+    if (category !== "all" && product.category !== category) return false;
+
+    // Price range filter
+    if (priceRange !== "all") {
+      const [min, max] = priceRange.split("-").map(Number);
+      if (max) {
+        if (product.price < min || product.price > max) return false;
+      } else {
+        // For "150+" case
+        if (product.price < 150) return false;
+      }
+    }
+
     return true;
   });
 };
@@ -92,7 +166,7 @@ const SearchBar = memo(({ searchQuery, setSearchQuery }) => {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    if (inputRef.current) inputRef.current.focus(); // Preserve focus
+    if (inputRef.current) inputRef.current.focus();
   }, []);
 
   const handleSearchChange = useCallback((e) => {
@@ -120,42 +194,127 @@ const ProductCard = memo(({ product }) => (
       className="w-full h-56 object-cover"
     />
     <div className="p-5">
-      <h3 className="text-lg font-semibold">{product.name}</h3>
-      <p className="text-gray-600 text-sm">Price: ${product.price}</p>
-      <span className="text-sm text-gray-500">{product.category}</span>
+      <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
+      <div className="flex justify-between items-center mb-3">
+        <p className="text-purple-600 font-bold">${product.price}</p>
+        <span className="px-2 py-1 bg-gray-100 rounded-full text-sm text-gray-600">
+          {product.category}
+        </span>
+      </div>
+      <a
+        href={product.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block w-full py-2 text-center bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+      >
+        View in Store
+      </a>
     </div>
   </div>
 ));
 
 const MyGiftApp = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedPriceRange, setSelectedPriceRange] = useState("all");
 
-  const filteredProducts = filterProducts(sampleProducts, searchQuery);
+  const filteredProducts = filterProducts(
+    sampleProducts,
+    searchQuery,
+    selectedCategory,
+    selectedPriceRange
+  );
 
   return (
-    <div className="min-h-screen p-8 bg-gray-50">
-      <div className="bg-white rounded-lg shadow-sm border-t-4 border-purple-600 p-6">
-        <label className="block text-sm font-medium mb-2">
-          Who are you buying for?
-        </label>
-        <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-        <button className="w-full py-3 mt-4 bg-purple-600 text-white rounded-lg flex items-center justify-center">
-          <Search className="mr-2" size={16} />
-          Find Perfect Gifts
-        </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-4 px-8 shadow-md">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <img src={Gift} alt="MyGift Logo" className="w-8 h-8 mr-2" />
+            <h1 className="text-2xl font-bold">MyGift</h1>
+          </div>
+          <p className="text-sm">Find the Perfect Gift</p>
+        </div>
       </div>
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))
-        ) : (
-          <p className="text-gray-500 text-center col-span-3">
-            No matching products found.
-          </p>
-        )}
+      <div className="p-8">
+        <div className="bg-white rounded-lg shadow-sm border-t-4 border-purple-600 p-6">
+          <div className="space-y-4">
+            <label className="block text-sm font-medium mb-2">
+              Who are you buying for?
+            </label>
+            <SearchBar
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+            />
+
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-200"
+            >
+              <Filter className="mr-2" size={16} />
+              {showFilters ? "Hide Filters" : "Show Filters"}
+            </button>
+
+            {showFilters && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Category
+                  </label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="all">All Categories</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Price Range
+                  </label>
+                  <select
+                    value={selectedPriceRange}
+                    onChange={(e) => setSelectedPriceRange(e.target.value)}
+                    className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    {priceRanges.map((range) => (
+                      <option key={range.value} value={range.value}>
+                        {range.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            <button className="w-full py-3 bg-purple-600 text-white rounded-lg flex items-center justify-center hover:bg-purple-700">
+              <Search className="mr-2" size={16} />
+              Find Perfect Gifts
+            </button>
+          </div>
+        </div>
+
+        {/* Products Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))
+          ) : (
+            <p className="text-gray-500 text-center col-span-3">
+              No matching products found.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
