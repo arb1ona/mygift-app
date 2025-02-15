@@ -169,9 +169,9 @@ const SearchBar = memo(({ searchQuery, setSearchQuery }) => {
     if (inputRef.current) inputRef.current.focus();
   }, []);
 
-  const handleSearchChange = useCallback((e) => {
+  const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
-  }, []);
+  };
 
   return (
     <input
