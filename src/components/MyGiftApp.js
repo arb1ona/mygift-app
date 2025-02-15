@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect, memo } from "react";
 import { Search, Filter } from "lucide-react";
-import wallet from "../images/wallet.jpg";
-import watch from "../images/watch.jpg";
-import candles from "../images/candles.jpg";
-import walletM from "../images/walletM.jpg";
-import earbuds from "../images/earbuds.jpg";
-import scarf from "../images/scarf.jpg";
-import Gift from "../images/gift.png";
+import wallet from "../../public/images/wallet.jpg";
+import watch from "../../public/images/watch.jpg";
+import candles from "../../public/images/candles.jpg";
+import walletM from "../../public/images/walletM.jpg";
+import earbuds from "../../public/images/earbuds.jpg";
+import scarf from "../../public/images/scarf.jpg";
+import Gift from "../../public/images/gift.png";
 
 // Sample product data with gender, category, and links
 const sampleProducts = [
